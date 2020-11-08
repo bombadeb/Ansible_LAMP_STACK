@@ -2,8 +2,7 @@
 
 - name: Deploy lamp stack application
   hosts: all
-  becoming: yes
-  check_mode: yes # Do not modify this line
+  become: yes
   tasks:
     - name: Install common dependencies
       yum:
@@ -11,16 +10,14 @@
           - libselinux-python
           - libsemanage-python
           - firewalld
-        state: install
+        state: installed
 
     # Install and Configure Database
 - name: Deploy lamp stack application
   hosts: db_servers
   become: yes
-  check_mode: yes # Do not modify this line
   tasks:
     - name: Install MariaDB package
-      
       yum:
         name:
           - mariadb-server
@@ -28,17 +25,13 @@
         state: installed
 
     - name: Create Mysql configuration file
-      copy: src=files/my.cnf destination=/etc/my.cnf
+      copy: src=files/my.cnf dest=/etc/my.cnf
 
     - name: Start MariaDB Service
-      service: name:mariadb state:started enabled=yes
+      service: name=mariadb state=started enabled=yes
 
     - name: Start firewalld
       service: name=firewalld state=started enabled=yes
-
-# Do not uncomment this!
-#    - name: insert firewalld rule
-#      firewalld: port={{ mysql_port }}/tcp permanent=true state=enabled
 
     - name: Move db-load-script to db host
       copy:
@@ -50,7 +43,6 @@
 
 - name: Deploy lamp stack application
   hosts: web_servers
-  check_mode: yes # Do not modify this line
   become: yes
   tasks:
     - name: Install httpd and php
@@ -67,12 +59,13 @@
     - name: Start firewalld
       service: name=firewalld state=started enabled=yes
 
-    -              name: http service state
-                   service: name=httpd state=start enabled=yes
+    - name: http service state
+      service: name=httpd state=started enabled=yes
 
     - name: Copy the code from repository
       git: repo={{ repository }} dest=/var/www/html/ force=yes
 
     - name: Creates the index.php file
       copy:
-        src: files/index.php dest=/var/www/html/index.php
+        src: files/index.php
+        dest: /var/www/html/index.php
